@@ -14,12 +14,12 @@ type AsyncClient struct {
 	clients  []*cmdClient
 	out      chan Callbacker
 	stopChan chan struct{}
-	opt      option
+	opt      options
 	wg       sync.WaitGroup
 	once     sync.Once
 }
 
-func NewAsyncWithConfig(cfg Config, opts ...tOption) (*AsyncClient, error) {
+func NewAsyncWithConfig(cfg Config, opts ...Option) (*AsyncClient, error) {
 	cli, err := NewClient(cfg)
 	if err != nil {
 		return nil, err
@@ -32,20 +32,20 @@ func NewAsyncWithConfig(cfg Config, opts ...tOption) (*AsyncClient, error) {
 	return NewAsync(cli, opts...), nil
 }
 
-func NewAsync(cli IClient, opts ...tOption) *AsyncClient {
-	var o = defaultOption()
-	for _, opt := range opts {
-		opt(&o)
+func NewAsync(cli IClient, opts ...Option) *AsyncClient {
+	var options = defaultOption()
+	for _, o := range opts {
+		o.apply(&options)
 	}
 	c := &AsyncClient{
-		out:      make(chan Callbacker, o.maxReturnQueue),
+		out:      make(chan Callbacker, options.maxReturnQueue),
 		stopChan: make(chan struct{}),
-		opt:      o,
+		opt:      options,
 		cli:      cli,
 	}
 
-	for i := 0; i < o.concurrency; i++ {
-		client := c.newCmdClient(o.maxCmdQueue)
+	for i := 0; i < options.concurrency; i++ {
+		client := c.newCmdClient(options.maxCmdQueue)
 		c.clients = append(c.clients, client)
 	}
 
@@ -53,9 +53,9 @@ func NewAsync(cli IClient, opts ...tOption) *AsyncClient {
 	c.wg.Add(1)
 	go c.runAllClient()
 
-	if o.pushFunc != nil {
+	if options.pushFunc != nil {
 		c.wg.Add(1)
-		go c.pushCallback(o.pushFunc)
+		go c.pushCallback(options.pushFunc)
 	}
 	return c
 }

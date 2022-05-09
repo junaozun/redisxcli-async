@@ -9,7 +9,7 @@ import (
 )
 
 // 选项
-type option struct {
+type options struct {
 	concurrency    int
 	hash           hashFun
 	maxCmdQueue    int // 每个thread最大命令队列
@@ -19,10 +19,19 @@ type option struct {
 	onStop         []func()
 	overtimeDur    time.Duration // 超时时间
 }
-type tOption func(*option)
 
-func defaultOption() option {
-	return option{
+type Option interface {
+	apply(*options)
+}
+
+type optionFunc func(*options)
+
+func (f optionFunc) apply(o *options) {
+	f(o)
+}
+
+func defaultOption() options {
+	return options{
 		maxCmdQueue:    1024,
 		maxReturnQueue: 1024,
 		concurrency:    8,
@@ -48,42 +57,42 @@ type (
 )
 
 // WithMaxCmdQueue 设置最大命令队列
-func WithMaxCmdQueue(size int) tOption {
-	return func(opt *option) {
+func WithMaxCmdQueue(size int) Option {
+	return optionFunc(func(opt *options) {
 		opt.maxCmdQueue = size
-	}
+	})
 }
 
 // WithMaxReturnQueue 设置最大返回队列
-func WithMaxReturnQueue(size int) tOption {
-	return func(opt *option) {
+func WithMaxReturnQueue(size int) Option {
+	return optionFunc(func(opt *options) {
 		opt.maxReturnQueue = size
-	}
+	})
 }
 
 // WithPushFunc 设置func
-func WithPushFunc(f func(ctx context.Context, f func()) error) tOption {
-	return func(opt *option) {
+func WithPushFunc(f func(ctx context.Context, f func()) error) Option {
+	return optionFunc(func(opt *options) {
 		opt.pushFunc = f
-	}
+	})
 }
 
-func WithStopHandler(f func()) tOption {
-	return func(opt *option) {
+func WithStopHandler(f func()) Option {
+	return optionFunc(func(opt *options) {
 		opt.onStop = append(opt.onStop, f)
-	}
+	})
 }
 
 // WithConcurrency 设置最大并发数
-func WithConcurrency(n int) tOption {
-	return func(opt *option) {
+func WithConcurrency(n int) Option {
+	return optionFunc(func(opt *options) {
 		opt.concurrency = n
-	}
+	})
 }
 
 // WithHashFunc 设置最大返回队列
-func WithHashFunc(hash hashFun) tOption {
-	return func(opt *option) {
+func WithHashFunc(hash hashFun) Option {
+	return optionFunc(func(opt *options) {
 		opt.hash = hash
-	}
+	})
 }
