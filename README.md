@@ -14,4 +14,4 @@
 ## 设计目的：redis的执行命令不阻塞业务逻辑主线程，并支持回调结果
 
 # 异步client架构图  
-![img.png](img.png)
+![img_1.png](img_1.png)
